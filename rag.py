@@ -2,7 +2,7 @@ import chromadb
 from chromadb.utils import embedding_functions
 import ollama
 import subprocess
-from flask import Flask, request
+from flask import Flask, request, make_response
 from flask_cors import CORS
 
 app = Flask(__name__)
@@ -41,12 +41,15 @@ def handle_get():
 
     prompt = f"Context:\n{context}\n\nQuestion: {query}\nAnswer based only on the context."
 
-    response = ollama.chat(
+    reply = ollama.chat(
         model=model_name,
         messages=[{"role": "user", "content": prompt}]
     )
 
-    return response['message']['content'], 200
+    response = make_response(reply['message']['content'], 200)
+    response.headers['Access-Control-Allow-Origin'] = '*'
+
+    return response
 
 if __name__ == '__main__':
     app.run()
