@@ -1,0 +1,6 @@
+numpy<2
+chromadb
+ollama
+sentence-transformers
+flask
+flask_cors
