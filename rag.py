@@ -58,7 +58,6 @@ def handle_get():
 
     response = make_response(reply['message']['content'], 200)
     response.headers['Access-Control-Allow-Origin'] = '*'
-    response.headers['ngrok-skip-browser-warning'] = 'bojojoing'
 
     return response
 
