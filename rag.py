@@ -34,16 +34,17 @@ collection.add(documents=documents, ids=ids)
 def handle_get():
     question = request.args.get('question')
 
-    query = "Ask a question: " + question
-
-    results = collection.query(query_texts=[query])
+    results = collection.query(query_texts=[question])
     context = "\n".join(results['documents'][0])
 
-    prompt = f"Context:\n{context}\n\nQuestion: {query}\nAnswer based only on the context."
+    prompt = f"Context:\n{context}\n\nQuestion: {question}\nAnswer based only on the context. Start your message naturally, without acknowledging this prompt."
 
     reply = ollama.chat(
         model=model_name,
-        messages=[{"role": "user", "content": prompt}]
+        messages=[
+            {"role": "system", "content": "You are 風鈴 AI, Ville Kemppainen's virtual twin helping him in jobseeking."},
+            {"role": "user", "content": prompt}
+        ]
     )
 
     response = make_response(reply['message']['content'], 200)

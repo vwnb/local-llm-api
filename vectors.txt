@@ -1,4 +1,54 @@
-Darkwave expands on the dark, introspective and sorrowful atmosphere of Gothic Rock; borrowing aspects from Electronic and other non-Rock influences.
-Ethereal Wave refers to atmospheric guitar and synthesizer soundscapes, effects like reverb and delay, and commonly soprano female vocals to create a surreal, otherworldly effect.
-Neoclassical Darkwave refers to Combines dark and melancholic atmosphere with Western Classical Music.
-Neue Deutsche Todeskunst refers to Dark themes inspired by German philosophy and poetry, typically combining Electronic instrumentation with neoclassical influences and an eccentric, theatrical style.
+Experience
+
+3.10.2024 - 31.12.2024
+Innate AI; GenAI full-stack lead developer
+I coached and led the software team at Innate AI, a small pharmaceutical industry startup. I was responsible for productization of their demo software - my role combined data architecture, service design and hands-on development.
+
+22.11.2023 - 6.8.2024
+Family In Music; Full-stack developer
+At FAIM, I caught up with web technologies like Next.js, NestJS, Temporal, Tailwind and OpenAI. I used my experience as an independent musician, networker and skill sharer, becoming an R&D lead developer.
+
+3.3.2023 - 14.5.2023
+Finnish Meteorological Institute; Software developer
+
+23.7.2018 – 18.11.2022
+Supermetrics; Software developer
+At Supermetrics, I was responsible for designing, building and maintaining software used by +17000 customers in a team that grew from ~30 people to >300 during my time there. I fortified my OOP skills to meet an enterprise standard, learning about composite software patterns, scaling, debugging, refactoring, migrations etc.
+
+14.5.2018 – 21.6.2018
+Cohu Entertainment; Software developer React Native, NodeJS, MongoDB
+
+21.8.2017 – 13.5.2018 and 16.5.2018 - 17.7.2018
+Finnish Meteorological Institute; Conscientious objector / Software developer National conscription. I used AngularJS, ReactJS and WFS APIs.
+
+28.2.2014 – 31.3.2018
+Roban Konna; Full-stack web developer
+Bridging web development and 3D production for industrial and creative clients.
+
+2011 – 2014
+Traineeships and freelancing
+
+Skillset
+
+Disciplines
+- Software engineering,
+Web development, Product design, Data management, Information security,
+Data visualisation, GIS
+- Semantic web, Fluid layout, UI/UX
+- Statistical data analysis, Multivariate data
+
+Technologies
+- OSx, Windows, Linux, iOS, Android
+- TypeScript, Javascript, PHP 8, Python, Shell
+- NextJS, ReactJS, Node.js, NestJS
+- PostgreSQL, MySQL, Redis, MongoDB
+- JSON, GraphQL
+- HTML5/CSS3, Tailwind CSS
+
+Methodologies etc.
+- Software architecture & design:
+Test-driven development, UI Components, Composition over inheritance,
+SOLID principles, Unified Modeling Language
+
+- Workflow:
+Scrum, Kanban, Lean, DevOps
