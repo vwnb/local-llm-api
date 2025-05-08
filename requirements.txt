@@ -5,3 +5,4 @@ sentence-transformers
 flask
 gunicorn
 flask_cors
+pyngrok
