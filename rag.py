@@ -4,6 +4,7 @@ import ollama
 import subprocess
 from flask import Flask, request, make_response
 from flask_cors import CORS
+import logging
 
 app = Flask(__name__)
 CORS(app)
@@ -29,6 +30,14 @@ collection = client.create_collection(
 )
 
 collection.add(documents=documents, ids=ids)
+
+logging.basicConfig(level=logging.INFO)
+
+@app.before_request
+def log_request_info():
+    logging.info(f"Request: {request.method} {request.url}")
+    logging.info(f"Headers: {dict(request.headers)}")
+    logging.info(f"Body: {request.get_data()}")
 
 @app.route('/ask', methods=['GET'])
 def handle_get():
