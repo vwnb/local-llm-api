@@ -1,3 +1,4 @@
+import json
 import chromadb
 from chromadb.utils import embedding_functions
 import ollama
@@ -17,22 +18,29 @@ except Exception as e:
     print(f"Model '{model_name}' not found. Pulling now...")
     subprocess.run(["ollama", "pull", model_name], check=True)
 
-with open("vectors.txt", "r") as f:
-    lines = [line.strip() for line in f if line.strip()]
+vectors_file = "vectors.json"
 
-documents = lines
-ids = [str(i) for i in range(len(documents))]
+documents = []
+ids = []
+
+with open(vectors_file, "r", encoding="utf-8") as f:
+    data = json.load(f)
+
+for i, row in enumerate(data):
+    # Flatten dict to a single string, e.g. "column1: value1 column2: value2 ..."
+    document = " ".join([f"{k}: {v}" for k, v in row.items()])
+    documents.append(document)
+    ids.append(str(i))
 
 client = chromadb.PersistentClient(path="./chroma_db")
 embedding_fn = embedding_functions.SentenceTransformerEmbeddingFunction(model_name="all-MiniLM-L6-v2")
 
-if "docs" in [col.name for col in client.list_collections()]:
-    collection = client.get_collection("docs")
-else:
-    collection = client.create_collection(name="docs", embedding_function=embedding_fn)
+collection = client.get_or_create_collection(name="jazz_vectors", embedding_function=embedding_fn)
 
 if collection.count() == 0:
     collection.add(documents=documents, ids=ids)
+else:
+    print("Collection already contains documents.")
 
 logging.basicConfig(level=logging.INFO)
 
@@ -69,9 +77,8 @@ def handle_ask():
             {
                 "role": "system",
                 "content": (
-                    "You are 風鈴 AI, Ville Kemppainen's virtual twin helping him in jobseeking. "
-                    "Answer based only on the context. Speak from Ville's perspective. "
-                    "Address the chatter as a potential employer."
+                    "You are 風鈴 AI, a jazz chatbot."
+                    "Answer based only on the context."
                 )
             },
             {"role": "user", "content": prompt}
