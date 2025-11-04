@@ -29,11 +29,13 @@ def extract_musical_features(path):
 
     # Tempo
     tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
+    logging.info(f"Extracted tempo")
 
     # Timbre / spectral
     brightness = float(np.mean(librosa.feature.spectral_centroid(y=y, sr=sr)))
     spectral_contrast = float(np.mean(librosa.feature.spectral_contrast(y=y, sr=sr)))
     energy = float(np.mean(librosa.feature.rms(y=y)))
+    logging.info(f"Extracted timbre / spectral")
 
     # Adjust hop length: faster tempo → finer resolution
     hop_length = int(np.clip(512 * (120.0 / max(tempo, 60.0)), 256, 1024))
@@ -49,12 +51,14 @@ def extract_musical_features(path):
     key_index = int(np.argmax(chroma_mean))
     key_confidence = float(np.max(chroma_mean) / np.sum(chroma_mean))
     key = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'][key_index]
+    logging.info(f"Extracted key")
 
-    # MFCCs
+    # MFCCs / spectral envelope
     n_mfcc = int(np.clip(13 + (brightness / 1000.0), 13, 30)) # more complex spectrum → more coefficients
     mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=n_mfcc)
     mfcc_means = mfcc.mean(axis=1).tolist()
     mfcc_stds = mfcc.std(axis=1).tolist()
+    logging.info(f"Extracted MFCCs")
 
     # Structural segmentation
     R = librosa.segment.recurrence_matrix(mfcc, sym=True, mode='affinity')
@@ -67,6 +71,7 @@ def extract_musical_features(path):
         "section_boundaries_sec": [float(t) for t in times],
         "section_durations_sec": [float(d) for d in section_durations]
     }
+    logging.info(f"Extracted structure")
 
     # Harmonic / percussive energy
     D = librosa.stft(y, hop_length=hop_length)
@@ -78,6 +83,7 @@ def extract_musical_features(path):
         "harmonic_energy": float(np.mean(librosa.feature.rms(y=h_y))),
         "percussive_energy": float(np.mean(librosa.feature.rms(y=p_y)))
     }
+    logging.info(f"Extracted harmonic / percussive energy")
 
     return json.dumps({
         "tempo_bpm": float(tempo),
