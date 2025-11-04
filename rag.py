@@ -115,9 +115,16 @@ def handle_ask():
     question = request.args.get('question', '')
     if not question:
         return make_response("Missing 'question' parameter", 400)
+    
+    filename = request.args.get('filename', '')
+    if not filename:
+        return make_response("Missing 'filename' parameter", 400)
 
-    features_str = extract_musical_features("Cakes Da Killa & XG - I RUN THIS GALA.wav")
-    print(features_str)
+    features_str = extract_musical_features(filename)
+
+    logging.info(f"Question: {question}")
+    logging.info(f"Filename: {filename}")
+    logging.info(f"Musical features extracted: {features_str}")
 
     prompt = f"Context:\n{features_str}\n\nQuestion: {question}"
 
