@@ -1,11 +1,15 @@
 import json
+import traceback
 import chromadb
 from chromadb.utils import embedding_functions
 import ollama
 import subprocess
-from flask import Flask, request, make_response
+from flask import Flask, jsonify, request, make_response
 from flask_cors import CORS
 import logging
+import librosa
+import numpy as np
+import json
 
 app = Flask(__name__)
 CORS(app)
@@ -18,31 +22,80 @@ except Exception as e:
     print(f"Model '{model_name}' not found. Pulling now...")
     subprocess.run(["ollama", "pull", model_name], check=True)
 
-vectors_file = "vectors.json"
-
-documents = []
-ids = []
-
-with open(vectors_file, "r", encoding="utf-8") as f:
-    data = json.load(f)
-
-for i, row in enumerate(data):
-    # Flatten dict to a single string, e.g. "column1: value1 column2: value2 ..."
-    document = " ".join([f"{k}: {v}" for k, v in row.items()])
-    documents.append(document)
-    ids.append(str(i))
-
-client = chromadb.PersistentClient(path="./chroma_db")
-embedding_fn = embedding_functions.SentenceTransformerEmbeddingFunction(model_name="all-MiniLM-L6-v2")
-
-collection = client.get_or_create_collection(name="jazz_vectors", embedding_function=embedding_fn)
-
-if collection.count() == 0:
-    collection.add(documents=documents, ids=ids)
-else:
-    print("Collection already contains documents.")
-
 logging.basicConfig(level=logging.INFO)
+
+def extract_musical_features(path):
+    y, sr = librosa.load(path)
+
+    tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
+    chroma = librosa.feature.chroma_cqt(y=y, sr=sr)
+    key = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'][np.argmax(chroma.mean(axis=1))]
+    brightness = float(np.mean(librosa.feature.spectral_centroid(y=y, sr=sr)))
+    energy = float(np.mean(librosa.feature.rms(y=y)))
+
+    mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=13)
+    mfcc_means = mfcc.mean(axis=1).tolist()
+
+    R = librosa.segment.recurrence_matrix(mfcc, sym=True)
+    embedding = librosa.segment.recurrence_to_lag(R)
+    boundaries = librosa.segment.agglomerative(embedding, k=3)
+    times = librosa.frames_to_time(boundaries, sr=sr)
+    segment_durations = np.diff(times)
+    section_summary = {
+        "num_sections": int(len(times) - 1),
+        "section_boundaries_sec": [float(t) for t in times],
+        "section_durations_sec": [float(d) for d in segment_durations]
+    }
+
+    D = librosa.stft(y)
+    harmonic, percussive = librosa.decompose.hpss(D, margin=3.0)
+    h_y = librosa.istft(harmonic)
+    p_y = librosa.istft(percussive)
+    hpss_features = {
+        "harmonic_energy": float(np.mean(librosa.feature.rms(y=h_y))),
+        "percussive_energy": float(np.mean(librosa.feature.rms(y=p_y)))
+    }
+
+    return json.dumps({
+        "tempo_bpm": float(tempo),
+        "key": key,
+        "brightness": brightness,
+        "energy": energy,
+        "sections": section_summary,
+        "mfcc_means": mfcc_means,
+        "hpss_features": hpss_features,
+    }, indent=2)
+
+def generate_feedback(model_name, prompt):
+    try:
+        reply = ollama.chat(model=model_name, options={"num_predict": 200}, messages=[
+            {
+                "role": "system",
+                "content": (
+                    "You are 風鈴 AI, a music feedback chatbot. "
+                    "Analyze this song’s mood, rhythm, and timbral qualities based on the feature data."
+                    "Respond in 3–4 sentences max."
+                    "Conclude with something qualitative - do you think the song is objectively interesting or pleasant?"
+                )
+            },
+            {"role": "user", "content": prompt}
+        ])
+        message = reply.get("message", {})
+        content = message.get("content", "")
+
+        if not content:
+            raise ValueError("No content returned from model.")
+
+        response = make_response(content, 200)
+
+    except Exception as e:
+        print("Error in generate_feedback:", traceback.format_exc())
+        response = make_response(
+            jsonify({"error": str(e)}),
+            500
+        )
+
+    return response
 
 @app.before_request
 def log_request_info():
@@ -63,31 +116,14 @@ def handle_ask():
     if not question:
         return make_response("Missing 'question' parameter", 400)
 
-    results = collection.query(query_texts=[question], n_results=3)
+    features_str = extract_musical_features("Cakes Da Killa & XG - I RUN THIS GALA.wav")
+    print(features_str)
 
-    if not results or not results['documents'][0]:
-        return make_response("No relevant documents found", 404)
+    prompt = f"Context:\n{features_str}\n\nQuestion: {question}"
 
-    context = "\n".join(results['documents'][0])
-    prompt = f"Context:\n{context}\n\nQuestion: {question}"
-
-    reply = ollama.chat(
-        model=model_name,
-        messages=[
-            {
-                "role": "system",
-                "content": (
-                    "You are 風鈴 AI, a jazz chatbot."
-                    "Answer based only on the context."
-                )
-            },
-            {"role": "user", "content": prompt}
-        ]
-    )
-
-    content = reply.get('message', {}).get('content', '')
-    response = make_response(content, 200)
-    response.headers['Access-Control-Allow-Origin'] = '*'
+    response = generate_feedback(model_name, prompt)
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    
     return response
 
 if __name__ == '__main__':
