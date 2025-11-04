@@ -1,7 +1,5 @@
 import json
 import traceback
-import chromadb
-from chromadb.utils import embedding_functions
 import ollama
 import subprocess
 from flask import Flask, jsonify, request, make_response
