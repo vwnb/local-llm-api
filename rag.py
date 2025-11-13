@@ -14,12 +14,6 @@ CORS(app)
 
 model_name = "gemma3"
 
-try:
-    ollama.chat(model=model_name, messages=[{"role": "user", "content": "Hello"}])
-except Exception as e:
-    print(f"Model '{model_name}' not found. Pulling now...")
-    subprocess.run(["ollama", "pull", model_name], check=True)
-
 logging.basicConfig(level=logging.INFO)
 
 def extract_musical_features(path):
