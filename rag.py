@@ -11,9 +11,7 @@ import json
 
 app = Flask(__name__)
 CORS(app)
-
 model_name = "gemma3"
-
 logging.basicConfig(level=logging.INFO)
 
 def extract_musical_features(path):
@@ -26,9 +24,9 @@ def extract_musical_features(path):
     logging.info(f"Extracted tempo")
 
     # Timbre / spectral
-    brightness = float(np.mean(librosa.feature.spectral_centroid(y=y, sr=sr)))
-    spectral_contrast = float(np.mean(librosa.feature.spectral_contrast(y=y, sr=sr)))
-    energy = float(np.mean(librosa.feature.rms(y=y)))
+    brightness = reduce_list_length(librosa.feature.spectral_centroid(y=y, sr=sr)[0])
+    spectral_contrast = reduce_list_length(librosa.feature.spectral_contrast(y=y, sr=sr).mean(axis=0))
+    energy = reduce_list_length(librosa.feature.rms(y=y)[0])
     logging.info(f"Extracted timbre / spectral")
 
     # Adjust hop length: faster tempo → finer resolution
@@ -48,7 +46,7 @@ def extract_musical_features(path):
     logging.info(f"Extracted key")
 
     # MFCCs / spectral envelope
-    n_mfcc = int(np.clip(13 + (brightness / 1000.0), 13, 30)) # more complex spectrum → more coefficients
+    n_mfcc = int(np.clip(13 + (float(np.mean(brightness)) / 1000.0), 13, 30)) # more complex spectrum → more coefficients
     mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=n_mfcc)
     mfcc_means = mfcc.mean(axis=1).tolist()
     mfcc_stds = mfcc.std(axis=1).tolist()
@@ -69,13 +67,13 @@ def extract_musical_features(path):
 
     # Harmonic / percussive energy
     D = librosa.stft(y, hop_length=hop_length)
-    margin = np.clip(2.0 + (brightness / 5000.0), 1.0, 5.0) # brighter (more percussive) → higher separation margin
+    margin = np.clip(2.0 + (float(np.mean(brightness)) / 5000.0), 1.0, 5.0) # brighter (more percussive) → higher separation margin
     harmonic, percussive = librosa.decompose.hpss(D, margin=margin)
     h_y = librosa.istft(harmonic)
     p_y = librosa.istft(percussive)
     hpss_features = {
-        "harmonic_energy": float(np.mean(librosa.feature.rms(y=h_y))),
-        "percussive_energy": float(np.mean(librosa.feature.rms(y=p_y)))
+        "harmonic_energy": reduce_list_length(librosa.feature.rms(y=h_y)[0]),
+        "percussive_energy": reduce_list_length(librosa.feature.rms(y=p_y)[0])
     }
     logging.info(f"Extracted harmonic / percussive energy")
 
@@ -92,6 +90,11 @@ def extract_musical_features(path):
         "hpss_features": hpss_features
     }, indent=2)
 
+def reduce_list_length(arr, target_len=32):
+    arr = np.array(arr)
+    idx = np.linspace(0, len(arr) - 1, target_len).astype(int)
+    return arr[idx].tolist()
+
 def generate_feedback(model_name, prompt):
     try:
         reply = ollama.chat(model=model_name, options={"num_predict": 200}, messages=[
@@ -101,7 +104,6 @@ def generate_feedback(model_name, prompt):
                     "You are 風鈴 AI, a music feedback chatbot. "
                     "Analyze this song’s mood, rhythm, and timbral qualities based on the feature data."
                     "Respond in 3–4 sentences max."
-                    "Conclude with something qualitative - do you think the song is objectively interesting or pleasant?"
                 )
             },
             {"role": "user", "content": prompt}
